@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Brain, Film, Globe, History, Music, SpaceIcon as Science, Trophy } from "lucide-react"
+import { QuestionCountSlider } from "./components/QuestionCountSlider"
 
 export default function HomePage() {
   return (
@@ -188,19 +189,6 @@ function HighScoreRow({ name, category, difficulty, score, date }) {
       <td className="py-3 px-4">{score}</td>
       <td className="py-3 px-4 text-muted-foreground">{date}</td>
     </tr>
-  )
-}
-
-function QuestionCountSlider() {
-  "use client"
-
-  const [questionCount, setQuestionCount] = React.useState(10)
-
-  return (
-    <div className="space-y-4">
-      <Slider defaultValue={[10]} max={20} step={1} onValueChange={(value) => setQuestionCount(value[0])} />
-      <div className="text-center font-medium">{questionCount} Questions</div>
-    </div>
   )
 }
 
