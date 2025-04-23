@@ -1,8 +1,47 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Brain, Database, Github, Globe, Info, Users } from "lucide-react"
 
+interface CategoryCount {
+  id: number
+  name: string
+  count: {
+    total_question_count: number
+    total_easy_question_count: number
+    total_medium_question_count: number
+    total_hard_question_count: number
+  }
+  error?: string
+}
+
 export default function AboutPage() {
+  const [categoryCounts, setCategoryCounts] = useState<CategoryCount[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCategoryCounts = async () => {
+      try {
+        const response = await fetch('/api/category-counts')
+        if (!response.ok) {
+          throw new Error(`Failed to fetch category counts: ${response.status}`)
+        }
+        const data = await response.json()
+        setCategoryCounts(data.categories || [])
+        setLoading(false)
+      } catch (err) {
+        console.error('Error fetching category counts:', err)
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
+        setLoading(false)
+      }
+    }
+
+    fetchCategoryCounts()
+  }, [])
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">
@@ -97,26 +136,21 @@ export default function AboutPage() {
                 <CardDescription>Explore the different categories available in our trivia games</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <CategoryCard name="General Knowledge" count={300} />
-                  <CategoryCard name="Entertainment: Books" count={200} />
-                  <CategoryCard name="Entertainment: Film" count={250} />
-                  <CategoryCard name="Entertainment: Music" count={180} />
-                  <CategoryCard name="Entertainment: Television" count={220} />
-                  <CategoryCard name="Entertainment: Video Games" count={150} />
-                  <CategoryCard name="Science & Nature" count={190} />
-                  <CategoryCard name="Science: Computers" count={120} />
-                  <CategoryCard name="Science: Mathematics" count={80} />
-                  <CategoryCard name="Mythology" count={100} />
-                  <CategoryCard name="Sports" count={170} />
-                  <CategoryCard name="Geography" count={160} />
-                  <CategoryCard name="History" count={210} />
-                  <CategoryCard name="Politics" count={90} />
-                  <CategoryCard name="Art" count={110} />
-                  <CategoryCard name="Celebrities" count={130} />
-                  <CategoryCard name="Animals" count={140} />
-                  <CategoryCard name="Vehicles" count={85} />
-                </div>
+                {loading ? (
+                  <div className="text-center py-8">Loading categories...</div>
+                ) : error ? (
+                  <div className="text-center py-8 text-red-500">{error}</div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {categoryCounts.map((category) => (
+                      <CategoryCard 
+                        key={category.id} 
+                        name={category.name} 
+                        count={category.count} 
+                      />
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -177,21 +211,53 @@ export default function AboutPage() {
   )
 }
 
-function CategoryCard({ name, count }) {
+interface CategoryCardProps {
+  name: string
+  count: {
+    total_question_count: number
+    total_easy_question_count: number
+    total_medium_question_count: number
+    total_hard_question_count: number
+  }
+}
+
+function CategoryCard({ name, count }: CategoryCardProps) {
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg">
-      <div className="flex items-center gap-3">
-        <div className="bg-primary/10 p-2 rounded-full">
-          <Brain className="h-4 w-4" />
+    <div className="flex flex-col p-3 border rounded-lg">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 p-2 rounded-full">
+            <Brain className="h-4 w-4" />
+          </div>
+          <span className="font-medium">{name}</span>
         </div>
-        <span>{name}</span>
+        <span className="text-sm bg-muted px-2 py-1 rounded-full">{count.total_question_count} questions</span>
       </div>
-      <span className="text-sm bg-muted px-2 py-1 rounded-full">{count} questions</span>
+      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-col items-center p-1 bg-green-50 dark:bg-green-900/20 rounded">
+          <span className="font-medium text-green-700 dark:text-green-400">Easy</span>
+          <span>{count.total_easy_question_count}</span>
+        </div>
+        <div className="flex flex-col items-center p-1 bg-yellow-50 dark:bg-yellow-900/20 rounded">
+          <span className="font-medium text-yellow-700 dark:text-yellow-400">Medium</span>
+          <span>{count.total_medium_question_count}</span>
+        </div>
+        <div className="flex flex-col items-center p-1 bg-red-50 dark:bg-red-900/20 rounded">
+          <span className="font-medium text-red-700 dark:text-red-400">Hard</span>
+          <span>{count.total_hard_question_count}</span>
+        </div>
+      </div>
     </div>
   )
 }
 
-function TeamMemberCard({ name, role, bio }) {
+interface TeamMemberCardProps {
+  name: string
+  role: string
+  bio: string
+}
+
+function TeamMemberCard({ name, role, bio }: TeamMemberCardProps) {
   return (
     <div className="border rounded-lg p-4">
       <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">

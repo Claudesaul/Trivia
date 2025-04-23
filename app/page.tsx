@@ -26,7 +26,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>("any")
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("any")
-  const [questionCount, setQuestionCount] = useState<number>(10)
+  const [questionCount, setQuestionCount] = useState<number>(5)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,7 +66,7 @@ export default function HomePage() {
       <section className="py-12 text-center">
         <div className="max-w-3xl mx-auto px-6 py-12 rounded-2xl bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 shadow-lg">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Trivia Challenge
+            Trivia
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Test your knowledge with thousands of trivia questions across multiple categories. No account required to

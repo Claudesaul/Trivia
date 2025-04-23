@@ -7,9 +7,9 @@ import Header from "@/components/header"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Trivia Challenge",
+  title: "Trivia",
   description: "Test your knowledge with thousands of trivia questions",
-    generator: 'v0.dev'
+    generator: 'Claude B.'
 }
 
 export default function RootLayout({
