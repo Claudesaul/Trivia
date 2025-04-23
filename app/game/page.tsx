@@ -39,7 +39,7 @@ export default function GamePage() {
         const params = new URLSearchParams(window.location.search)
         const category = params.get('category')
         const difficulty = params.get('difficulty')
-        const amount = params.get('amount') || '10'
+        const amount = params.get('amount') || '5'
 
         // Build API URL with parameters
         let apiUrl = `/api/trivia?amount=${amount}`
