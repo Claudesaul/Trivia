@@ -1,4 +1,6 @@
-import React from "react"
+"use client"
+
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,7 +9,57 @@ import { Slider } from "@/components/ui/slider"
 import { Brain, Film, Globe, History, Music, SpaceIcon as Science, Trophy } from "lucide-react"
 import { QuestionCountSlider } from "./components/QuestionCountSlider"
 
+interface Category {
+  id: number
+  name: string
+}
+
+interface CategoryCardProps {
+  icon: React.ReactNode
+  title: string
+  questionCount: string
+  isCustom?: boolean
+  categoryId?: string
+}
+
 export default function HomePage() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>("any")
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("any")
+  const [questionCount, setQuestionCount] = useState<number>(10)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        if (!response.ok) {
+          throw new Error(`Failed to fetch categories: ${response.status}`)
+        }
+        const data = await response.json()
+        setCategories(data.trivia_categories || [])
+        setLoading(false)
+      } catch (err) {
+        console.error('Error fetching categories:', err)
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
+        setLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  const handleStartGame = () => {
+    // Build the URL with query parameters
+    let gameUrl = `/game?amount=${questionCount}`
+    if (selectedCategory !== "any") gameUrl += `&category=${selectedCategory}`
+    if (selectedDifficulty !== "any") gameUrl += `&difficulty=${selectedDifficulty}`
+    
+    // Navigate to the game page
+    window.location.href = gameUrl
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
@@ -20,14 +72,13 @@ export default function HomePage() {
             Test your knowledge with thousands of trivia questions across multiple categories. No account required to
             start playing!
           </p>
-          <Link href="/game">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold px-8 py-6 text-lg"
-            >
-              Play Now
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold px-8 py-6 text-lg"
+            onClick={handleStartGame}
+          >
+            Play Now
+          </Button>
         </div>
       </section>
 
@@ -40,19 +91,17 @@ export default function HomePage() {
               <CardDescription>Choose your trivia category</CardDescription>
             </CardHeader>
             <CardContent>
-              <Select>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any">Any Category</SelectItem>
-                  <SelectItem value="9">General Knowledge</SelectItem>
-                  <SelectItem value="10">Books</SelectItem>
-                  <SelectItem value="11">Film</SelectItem>
-                  <SelectItem value="12">Music</SelectItem>
-                  <SelectItem value="17">Science & Nature</SelectItem>
-                  <SelectItem value="22">Geography</SelectItem>
-                  <SelectItem value="23">History</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </CardContent>
@@ -64,7 +113,7 @@ export default function HomePage() {
               <CardDescription>Set your challenge level</CardDescription>
             </CardHeader>
             <CardContent>
-              <Select>
+              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
@@ -84,7 +133,7 @@ export default function HomePage() {
               <CardDescription>How many questions to include</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <QuestionCountSlider />
+              <QuestionCountSlider value={questionCount} onChange={setQuestionCount} />
             </CardContent>
           </Card>
         </div>
@@ -94,13 +143,13 @@ export default function HomePage() {
       <section className="py-8">
         <h2 className="text-2xl font-bold mb-6">Popular Categories</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <CategoryCard icon={<Brain className="h-8 w-8" />} title="General Knowledge" questionCount="1000+" />
-          <CategoryCard icon={<Film className="h-8 w-8" />} title="Film & TV" questionCount="800+" />
-          <CategoryCard icon={<Science className="h-8 w-8" />} title="Science" questionCount="750+" />
-          <CategoryCard icon={<Music className="h-8 w-8" />} title="Music" questionCount="600+" />
-          <CategoryCard icon={<History className="h-8 w-8" />} title="History" questionCount="500+" />
-          <CategoryCard icon={<Globe className="h-8 w-8" />} title="Geography" questionCount="450+" />
-          <CategoryCard icon={<Brain className="h-8 w-8" />} title="Sports" questionCount="400+" />
+          <CategoryCard icon={<Brain className="h-8 w-8" />} title="General Knowledge" questionCount="1000+" categoryId="9" />
+          <CategoryCard icon={<Film className="h-8 w-8" />} title="Film & TV" questionCount="800+" categoryId="11" />
+          <CategoryCard icon={<Science className="h-8 w-8" />} title="Science" questionCount="750+" categoryId="17" />
+          <CategoryCard icon={<Music className="h-8 w-8" />} title="Music" questionCount="600+" categoryId="12" />
+          <CategoryCard icon={<History className="h-8 w-8" />} title="History" questionCount="500+" categoryId="23" />
+          <CategoryCard icon={<Globe className="h-8 w-8" />} title="Geography" questionCount="450+" categoryId="22" />
+          <CategoryCard icon={<Brain className="h-8 w-8" />} title="Sports" questionCount="400+" categoryId="21" />
           <CategoryCard
             icon={<Trophy className="h-8 w-8" />}
             title="Create Custom Game"
@@ -144,7 +193,15 @@ export default function HomePage() {
   )
 }
 
-function CategoryCard({ icon, title, questionCount, isCustom = false }) {
+function CategoryCard({ icon, title, questionCount, isCustom = false, categoryId = "" }: CategoryCardProps) {
+  const handleCategoryClick = () => {
+    if (isCustom) {
+      window.location.href = "/game"
+    } else {
+      window.location.href = `/game?category=${categoryId}&amount=10`
+    }
+  }
+
   return (
     <Card className="hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
       <CardContent className="pt-6">
@@ -154,21 +211,28 @@ function CategoryCard({ icon, title, questionCount, isCustom = false }) {
           </div>
           <h3 className="font-bold text-lg mb-1">{title}</h3>
           <p className="text-sm text-muted-foreground mb-4">{questionCount}</p>
-          <Link href={isCustom ? "/game/custom" : `/game/category/${title.toLowerCase()}`}>
-            <Button
-              variant={isCustom ? "default" : "outline"}
-              className={`w-full ${isCustom ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" : ""}`}
-            >
-              {isCustom ? "Create Custom" : "Play Now"}
-            </Button>
-          </Link>
+          <Button
+            variant={isCustom ? "default" : "outline"}
+            className={`w-full ${isCustom ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" : ""}`}
+            onClick={handleCategoryClick}
+          >
+            {isCustom ? "Create Custom" : "Play Now"}
+          </Button>
         </div>
       </CardContent>
     </Card>
   )
 }
 
-function HighScoreRow({ name, category, difficulty, score, date }) {
+interface HighScoreRowProps {
+  name: string
+  category: string
+  difficulty: string
+  score: string
+  date: string
+}
+
+function HighScoreRow({ name, category, difficulty, score, date }: HighScoreRowProps) {
   return (
     <tr className="border-b hover:bg-white/50 dark:hover:bg-gray-900/50">
       <td className="py-3 px-4 font-medium">{name}</td>

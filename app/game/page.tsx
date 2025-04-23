@@ -7,79 +7,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress"
 import { AlertCircle, CheckCircle, ChevronRight, Clock, XCircle } from "lucide-react"
 
-// Updated questions with more variety and matching categories
-const TRIVIA_QUESTIONS = [
-  {
-    question: "What is the capital of France?",
-    correct_answer: "Paris",
-    incorrect_answers: ["London", "Berlin", "Madrid"],
-    difficulty: "easy",
-    category: "Geography",
-  },
-  {
-    question: "Which planet has the most moons?",
-    correct_answer: "Saturn",
-    incorrect_answers: ["Jupiter", "Uranus", "Neptune"],
-    difficulty: "medium",
-    category: "Science",
-  },
-  {
-    question: "Who directed the movie 'Pulp Fiction'?",
-    correct_answer: "Quentin Tarantino",
-    incorrect_answers: ["Steven Spielberg", "Martin Scorsese", "Christopher Nolan"],
-    difficulty: "medium",
-    category: "Film & TV",
-  },
-  {
-    question: "Which band released the album 'The Dark Side of the Moon'?",
-    correct_answer: "Pink Floyd",
-    incorrect_answers: ["The Beatles", "Led Zeppelin", "The Rolling Stones"],
-    difficulty: "medium",
-    category: "Music",
-  },
-  {
-    question: "In which year did World War II end?",
-    correct_answer: "1945",
-    incorrect_answers: ["1939", "1942", "1944"],
-    difficulty: "easy",
-    category: "History",
-  },
-  {
-    question: "What is the chemical symbol for gold?",
-    correct_answer: "Au",
-    incorrect_answers: ["Ag", "Fe", "Gd"],
-    difficulty: "easy",
-    category: "Science",
-  },
-  {
-    question: "Which country has the largest population in the world?",
-    correct_answer: "India",
-    incorrect_answers: ["China", "United States", "Indonesia"],
-    difficulty: "easy",
-    category: "Geography",
-  },
-  {
-    question: "Who wrote the play 'Romeo and Juliet'?",
-    correct_answer: "William Shakespeare",
-    incorrect_answers: ["Charles Dickens", "Jane Austen", "Mark Twain"],
-    difficulty: "easy",
-    category: "General Knowledge",
-  },
-  {
-    question: "Which sport is played at Wimbledon?",
-    correct_answer: "Tennis",
-    incorrect_answers: ["Golf", "Cricket", "Football"],
-    difficulty: "easy",
-    category: "Sports",
-  },
-  {
-    question: "What is the largest ocean on Earth?",
-    correct_answer: "Pacific Ocean",
-    incorrect_answers: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean"],
-    difficulty: "easy",
-    category: "Geography",
-  },
-]
+interface TriviaQuestion {
+  type: string
+  difficulty: "easy" | "medium" | "hard"
+  category: string
+  question: string
+  correct_answer: string
+  incorrect_answers: string[]
+}
 
 export default function GamePage() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -88,20 +23,54 @@ export default function GamePage() {
   const [isAnswered, setIsAnswered] = useState(false)
   const [timeLeft, setTimeLeft] = useState(15)
   const [gameOver, setGameOver] = useState(false)
-  const [questions, setQuestions] = useState([])
+  const [questions, setQuestions] = useState<TriviaQuestion[]>([])
   const [loading, setLoading] = useState(true)
-  const [shuffledAnswers, setShuffledAnswers] = useState([])
+  const [error, setError] = useState<string | null>(null)
+  const [shuffledAnswers, setShuffledAnswers] = useState<string[]>([])
 
   // Use a ref to store shuffled answers to prevent re-shuffling on re-renders
-  const answersRef = useRef([])
+  const answersRef = useRef<string[]>([])
 
-  // Mock questions (in a real app, these would come from the API)
+  // Fetch questions from our API
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setQuestions(TRIVIA_QUESTIONS)
-      setLoading(false)
-    }, 1500)
+    const fetchQuestions = async () => {
+      try {
+        // Get URL parameters
+        const params = new URLSearchParams(window.location.search)
+        const category = params.get('category')
+        const difficulty = params.get('difficulty')
+        const amount = params.get('amount') || '10'
+
+        // Build API URL with parameters
+        let apiUrl = `/api/trivia?amount=${amount}`
+        if (category && category !== 'any') apiUrl += `&category=${category}`
+        if (difficulty && difficulty !== 'any') apiUrl += `&difficulty=${difficulty}`
+
+        console.log('Fetching from our API:', apiUrl)
+        const response = await fetch(apiUrl)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          throw new Error('No questions received from the API')
+        }
+        
+        console.log(`Received ${data.length} questions from API`)
+        setQuestions(data)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching questions:', error)
+        setError(error instanceof Error ? error.message : 'An error occurred')
+        setLoading(false)
+      }
+    }
+
+    fetchQuestions()
   }, [])
 
   // Shuffle answers when moving to a new question
@@ -138,9 +107,9 @@ export default function GamePage() {
   // Reset timer when moving to next question
   useEffect(() => {
     setTimeLeft(15)
-  }, [])
+  }, [currentQuestion])
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = (answer: string) => {
     if (isAnswered) return
 
     setIsAnswered(true)
@@ -170,12 +139,19 @@ export default function GamePage() {
   }
 
   const restartGame = () => {
-    setCurrentQuestion(0)
-    setScore(0)
-    setSelectedAnswer("")
-    setIsAnswered(false)
-    setTimeLeft(15)
-    setGameOver(false)
+    // Get current URL parameters
+    const params = new URLSearchParams(window.location.search)
+    const category = params.get('category')
+    const difficulty = params.get('difficulty')
+    const amount = params.get('amount') || '10'
+    
+    // Build the URL with the same parameters
+    let gameUrl = `/game?amount=${amount}`
+    if (category) gameUrl += `&category=${category}`
+    if (difficulty) gameUrl += `&difficulty=${difficulty}`
+    
+    // Navigate to the same game with the same settings
+    window.location.href = gameUrl
   }
 
   if (loading) {
@@ -197,6 +173,27 @@ export default function GamePage() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
+        <Card className="w-full max-w-2xl shadow-lg bg-white/90 dark:bg-gray-900/90">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+              Error Loading Questions
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   if (gameOver) {
     const totalQuestions = questions.length
     const maxPossibleScore = questions.reduce((total, q) => {
@@ -207,45 +204,35 @@ export default function GamePage() {
 
     return (
       <div className="container mx-auto px-4 py-12">
-        <Card className="w-full max-w-2xl mx-auto shadow-lg bg-white/90 dark:bg-gray-900/90">
+        <Card className="max-w-2xl mx-auto shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Game Over!</CardTitle>
+            <CardTitle className="text-3xl mb-2">Game Over!</CardTitle>
             <CardDescription>Here's how you did</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-center py-4">
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                {score} pts
+            <div className="text-center">
+              <div className="text-6xl font-bold mb-2">{percentage}%</div>
+              <div className="text-xl text-muted-foreground">
+                {score} out of {maxPossibleScore} points
               </div>
-              <Progress value={percentage} className="h-2 mb-2" />
-              <p className="text-muted-foreground">{percentage}% of total possible points</p>
             </div>
-
-            <div className="border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/50 dark:to-blue-950/50">
-              <h3 className="font-bold mb-3">Game Summary</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>Total Questions:</div>
-                <div className="text-right">{totalQuestions}</div>
-                <div>Difficulty:</div>
-                <div className="text-right">Mixed</div>
-                <div>Category:</div>
-                <div className="text-right">Mixed</div>
-                <div>Time Spent:</div>
-                <div className="text-right">2m 34s</div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Questions</span>
+                <span>{totalQuestions}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Correct Answers</span>
+                <span>{score}</span>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={restartGame}
-              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
+          <CardFooter className="flex justify-center gap-4">
+            <Button onClick={restartGame} variant="outline">
               Play Again
             </Button>
-            <Link href="/" className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full">
-                Back to Home
-              </Button>
+            <Link href="/">
+              <Button>Back to Home</Button>
             </Link>
           </CardFooter>
         </Card>
@@ -254,11 +241,11 @@ export default function GamePage() {
   }
 
   const currentQ = questions[currentQuestion]
-  const progressPercentage = (currentQuestion / questions.length) * 100
+  const progressPercentage = ((currentQuestion + 1) / questions.length) * 100
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card className="w-full max-w-3xl mx-auto shadow-lg bg-white/90 dark:bg-gray-900/90">
+      <Card className="max-w-3xl mx-auto shadow-lg">
         <CardHeader>
           <div className="flex justify-between items-center mb-2">
             <div className="text-sm font-medium text-muted-foreground">
@@ -321,55 +308,17 @@ export default function GamePage() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <div className="flex items-center gap-2">
-            <div className="font-medium">Score:</div>
-            <div className="font-bold text-primary">{score} pts</div>
+          <div className="text-sm font-medium">
+            Score: <span className="text-primary">{score}</span>
           </div>
-          {isAnswered ? (
-            <Button
-              onClick={nextQuestion}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
-              {currentQuestion < questions.length - 1 ? "Next Question" : "See Results"}
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => handleAnswer("")} disabled={timeLeft > 0}>
-              Skip <ChevronRight className="ml-2 h-4 w-4" />
+          {isAnswered && (
+            <Button onClick={nextQuestion} className="gap-2">
+              {currentQuestion < questions.length - 1 ? "Next Question" : "Finish"}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           )}
         </CardFooter>
       </Card>
-
-      {isAnswered && (
-        <div className="w-full max-w-3xl mx-auto mt-4">
-          <Card className="bg-white/90 dark:bg-gray-900/90 shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                {selectedAnswer === currentQ.correct_answer ? (
-                  <>
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Correct!</p>
-                      <p className="text-sm text-muted-foreground">Great job! You selected the right answer.</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium">{selectedAnswer ? "Incorrect" : "Time's up!"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        The correct answer was: <span className="font-medium">{currentQ.correct_answer}</span>
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }
