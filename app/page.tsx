@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Brain, Film, Globe, History, Music, SpaceIcon as Science, Trophy } from "lucide-react"
-import { QuestionCountSlider } from "./components/QuestionCountSlider"
+import { QuestionCountSlider } from "@/components/game/QuestionCountSlider"
 
 interface Category {
   id: number

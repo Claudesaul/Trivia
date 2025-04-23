@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 
-const OPENTDB_API = 'https://opentdb.com/api.php'
+const OPENTDB_API = 'https://opentdb.com/api_category.php'
 
 export async function GET() {
   try {
-    // Fetch categories from OpenTDB
-    const response = await fetch('https://opentdb.com/api_category.php')
+    const response = await fetch(OPENTDB_API)
     
     if (!response.ok) {
       console.error('OpenTDB API error:', response.status, response.statusText)
@@ -18,7 +17,6 @@ export async function GET() {
     const data = await response.json()
     console.log('Categories fetched successfully')
 
-    // Return the categories directly from the API response
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error fetching categories:', error)
