@@ -3,13 +3,14 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "@/styles/globals.css"
 import Header from "@/components/header"
+import { UserProvider } from "@/context/UserContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Trivia",
   description: "Test your knowledge with thousands of trivia questions",
-    generator: 'Claude B.'
+  generator: 'Claude B.'
 }
 
 export default function RootLayout({
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 dark:from-purple-950 dark:via-blue-950 dark:to-teal-950">
-          <Header />
-          <main>{children}</main>
-        </div>
+        <UserProvider>
+          <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 dark:from-purple-950 dark:via-blue-950 dark:to-teal-950">
+            <Header />
+            <main>{children}</main>
+          </div>
+        </UserProvider>
       </body>
     </html>
   )

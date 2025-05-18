@@ -2,17 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Award, BookOpen, Calendar, Clock, Edit, History, Medal, Star, Trophy, User } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useUser } from '@/context/UserContext'
+import { Award, BookOpen, Calendar, Clock, History, Medal, Star, Trophy, User } from "lucide-react"
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
+// Define user type
+type UserProfile = {
+  id: string
+  username: string
+  display_name?: string
+  avatar_url?: string
+  total_points: number
+  created_at: string
+}
 
 // Define game score type
 type GameScore = {
@@ -25,87 +32,71 @@ type GameScore = {
   user_id: string
 }
 
-export default function ProfilePage() {
-  const { user, isLoading } = useUser()
+export default function UserProfilePage({ params }: { params: { userId: string } }) {
+  const router = useRouter()
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("stats")
   const [scores, setScores] = useState<GameScore[]>([])
   const [loadingScores, setLoadingScores] = useState(true)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [displayName, setDisplayName] = useState("")
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [updateError, setUpdateError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // Set display name from user when it loads
+  // Fetch user data
   useEffect(() => {
-    if (user) {
-      setDisplayName(user.display_name || user.username)
-    }
-  }, [user])
-
-  // Fetch user scores
-  useEffect(() => {
-    if (!user) return
-
-    async function fetchScores() {
+    async function fetchUserData() {
       try {
-        const { data, error } = await supabase
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', params.userId)
+          .single()
+
+        if (userError) throw userError
+        
+        if (!userData) {
+          setError('User not found')
+          setIsLoading(false)
+          return
+        }
+
+        setUser(userData as UserProfile)
+
+        // Fetch scores for this user
+        const { data: scoresData, error: scoresError } = await supabase
           .from('game_scores')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', params.userId)
           .order('created_at', { ascending: false })
 
-        if (error) throw error
-        setScores(data || [])
-      } catch (error) {
-        console.error('Error fetching scores:', error)
-      } finally {
+        if (scoresError) throw scoresError
+        setScores(scoresData || [])
         setLoadingScores(false)
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+        setError('Failed to load user data')
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    fetchScores()
-  }, [user])
-  
-  // Function to update user display name
-  async function updateDisplayName() {
-    if (!user) return
-    
-    setIsUpdating(true)
-    setUpdateError(null)
-    
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          display_name: displayName,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-      
-      if (error) throw error
-      
-      // Force reload to update the user context
-      window.location.reload()
-    } catch (error) {
-      console.error('Error updating display name:', error)
-      setUpdateError('Failed to update profile. Please try again.')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
+    fetchUserData()
+  }, [params.userId])
 
   if (isLoading) {
     return <div className="container mx-auto p-8">Loading user profile...</div>
   }
 
-  if (!user) {
+  if (error || !user) {
     return (
       <div className="container mx-auto p-8">
         <Card>
           <CardHeader>
-            <CardTitle>Please Sign In</CardTitle>
-            <CardDescription>You need to be signed in to view your profile</CardDescription>
+            <CardTitle>Error</CardTitle>
+            <CardDescription>{error || 'User not found'}</CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button onClick={() => router.push('/')}>Return to Home</Button>
+          </CardContent>
         </Card>
       </div>
     )
@@ -169,7 +160,7 @@ export default function ProfilePage() {
                 </Badge>
                 <Badge variant="outline" className="flex items-center gap-1">
                   <Star className="h-3 w-3" />
-                  {correctAnswers} pts
+                  {user.total_points} pts
                 </Badge>
               </div>
             </CardHeader>
@@ -231,59 +222,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full flex items-center gap-2">
-                    <Edit className="h-4 w-4" />
-                    Edit Profile
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Edit Profile</DialogTitle>
-                    <DialogDescription>
-                      Update your profile information below. Your username cannot be changed.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="username" className="text-right">
-                        Username
-                      </Label>
-                      <Input
-                        id="username"
-                        value={user.username}
-                        className="col-span-3"
-                        disabled
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="displayName" className="text-right">
-                        Display Name
-                      </Label>
-                      <Input
-                        id="displayName"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        className="col-span-3"
-                      />
-                    </div>
-                    {updateError && (
-                      <div className="text-red-500 text-sm">{updateError}</div>
-                    )}
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={() => setIsEditDialogOpen(false)} variant="outline">
-                      Cancel
-                    </Button>
-                    <Button onClick={updateDisplayName} disabled={isUpdating}>
-                      {isUpdating ? "Saving..." : "Save Changes"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </CardFooter>
           </Card>
         </div>
 
@@ -303,7 +241,7 @@ export default function ProfilePage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>No Stats Available</CardTitle>
-                    <CardDescription>Play some games to see your stats here!</CardDescription>
+                    <CardDescription>This user hasn't played any games yet!</CardDescription>
                   </CardHeader>
                 </Card>
               ) : (
@@ -312,7 +250,7 @@ export default function ProfilePage() {
                     <Card>
                       <CardHeader>
                         <CardTitle>Performance Overview</CardTitle>
-                        <CardDescription>Your trivia performance across categories</CardDescription>
+                        <CardDescription>Trivia performance across categories</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
@@ -340,7 +278,7 @@ export default function ProfilePage() {
                       <Card>
                         <CardHeader>
                           <CardTitle>Difficulty Breakdown</CardTitle>
-                          <CardDescription>Your performance by difficulty level</CardDescription>
+                          <CardDescription>Performance by difficulty level</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-4">
@@ -372,7 +310,7 @@ export default function ProfilePage() {
                     <Card>
                       <CardHeader>
                         <CardTitle>Quick Stats</CardTitle>
-                        <CardDescription>Your trivia journey in numbers</CardDescription>
+                        <CardDescription>Trivia journey in numbers</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 gap-4">
@@ -394,13 +332,13 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Games</CardTitle>
-                  <CardDescription>Your recent trivia games</CardDescription>
+                  <CardDescription>Recent trivia games</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loadingScores ? (
                     <div>Loading game history...</div>
                   ) : scores.length === 0 ? (
-                    <div>You haven't played any games yet.</div>
+                    <div>This user hasn't played any games yet.</div>
                   ) : (
                     <div className="space-y-4">
                       {scores.slice(0, 10).map(score => {
@@ -435,7 +373,7 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Achievements & Badges</CardTitle>
-                  <CardDescription>Rewards for your trivia accomplishments</CardDescription>
+                  <CardDescription>Rewards for trivia accomplishments</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -486,6 +424,12 @@ export default function ProfilePage() {
             </TabsContent>
           </Tabs>
         </div>
+      </div>
+      
+      <div className="mt-8 text-center">
+        <Link href="/">
+          <Button variant="outline">Back to Home</Button>
+        </Link>
       </div>
     </div>
   )
@@ -574,4 +518,3 @@ function BadgeCard({ icon, title, description, progress, completed = false }:
     </div>
   )
 }
-

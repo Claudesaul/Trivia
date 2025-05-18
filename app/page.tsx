@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
+import { formatDistanceToNow } from 'date-fns'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Brain, Film, Globe, History, Music, SpaceIcon as Science, Trophy } from "lucide-react"
 import { QuestionCountSlider } from "@/components/game/QuestionCountSlider"
+import { ScoreWithUser } from "@/lib/score"
 
 interface Category {
   id: number
@@ -162,32 +164,7 @@ export default function HomePage() {
       {/* Recent High Scores */}
       <section className="py-8">
         <h2 className="text-2xl font-bold mb-6">Recent High Scores</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4">Player</th>
-                <th className="text-left py-3 px-4">Category</th>
-                <th className="text-left py-3 px-4">Difficulty</th>
-                <th className="text-left py-3 px-4">Score</th>
-                <th className="text-left py-3 px-4">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <HighScoreRow name="TriviaMaster" category="Science" difficulty="Hard" score="9/10" date="1 hour ago" />
-              <HighScoreRow name="QuizWhiz" category="History" difficulty="Medium" score="8/10" date="3 hours ago" />
-              <HighScoreRow name="BrainiacGamer" category="Film" difficulty="Easy" score="10/10" date="5 hours ago" />
-              <HighScoreRow
-                name="KnowledgeSeeker"
-                category="Geography"
-                difficulty="Hard"
-                score="7/10"
-                date="Yesterday"
-              />
-              <HighScoreRow name="QuestionQueen" category="Music" difficulty="Medium" score="9/10" date="Yesterday" />
-            </tbody>
-          </table>
-        </div>
+        <RecentHighScores />
       </section>
     </div>
   )
@@ -226,23 +203,31 @@ function CategoryCard({ icon, title, questionCount, isCustom = false, categoryId
 
 interface HighScoreRowProps {
   name: string
+  userId: string
   category: string
   difficulty: string
   score: string
   date: string
 }
 
-function HighScoreRow({ name, category, difficulty, score, date }: HighScoreRowProps) {
+function HighScoreRow({ name, userId, category, difficulty, score, date }: HighScoreRowProps) {
   return (
     <tr className="border-b hover:bg-white/50 dark:hover:bg-gray-900/50">
-      <td className="py-3 px-4 font-medium">{name}</td>
+      <td className="py-3 px-4 font-medium">
+        <Link
+          href={`/profile/${userId}`} 
+          className="hover:text-primary hover:underline cursor-pointer"
+        >
+          {name}
+        </Link>
+      </td>
       <td className="py-3 px-4">{category}</td>
       <td className="py-3 px-4">
         <span
           className={`px-2 py-1 rounded text-xs ${
-            difficulty === "Easy"
+            difficulty.toLowerCase() === "easy"
               ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-              : difficulty === "Medium"
+              : difficulty.toLowerCase() === "medium"
                 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                 : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
           }`}
@@ -256,3 +241,81 @@ function HighScoreRow({ name, category, difficulty, score, date }: HighScoreRowP
   )
 }
 
+function RecentHighScores() {
+  const [scores, setScores] = useState<ScoreWithUser[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRecentScores = async () => {
+      try {
+        const response = await fetch('/api/recent-scores?limit=5');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recent scores: ${response.status}`);
+        }
+        const data = await response.json();
+        setScores(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching recent scores:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setLoading(false);
+      }
+    };
+
+    fetchRecentScores();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center p-4 text-red-600 dark:text-red-400">
+        Failed to load recent scores. Please try again later.
+      </div>
+    );
+  }
+
+  if (scores.length === 0) {
+    return (
+      <div className="text-center p-4 text-muted-foreground">
+        No game scores yet. Be the first to play!
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-3 px-4">Player</th>
+            <th className="text-left py-3 px-4">Category</th>
+            <th className="text-left py-3 px-4">Difficulty</th>
+            <th className="text-left py-3 px-4">Score</th>
+            <th className="text-left py-3 px-4">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scores.map((score) => (
+            <HighScoreRow
+              key={score.id}
+              name={score.users.display_name || score.users.username}
+              userId={score.user_id}
+              category={score.category}
+              difficulty={score.difficulty.charAt(0).toUpperCase() + score.difficulty.slice(1)}
+              score={`${score.score}/${score.total_questions}`}
+              date={score.created_at ? formatDistanceToNow(new Date(score.created_at), { addSuffix: true }) : 'Unknown'}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

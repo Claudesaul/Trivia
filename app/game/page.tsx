@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { AlertCircle, CheckCircle, ChevronRight, Clock, XCircle } from "lucide-react"
+import { useUser } from "@/context/UserContext"
+import { decode } from 'html-entities'
 
 interface TriviaQuestion {
   type: string
@@ -17,23 +19,26 @@ interface TriviaQuestion {
 }
 
 export default function GamePage() {
+  // State
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState("")
   const [isAnswered, setIsAnswered] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(15)
   const [gameOver, setGameOver] = useState(false)
   const [questions, setQuestions] = useState<TriviaQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shuffledAnswers, setShuffledAnswers] = useState<string[]>([])
-
-  // Use a ref to store shuffled answers to prevent re-shuffling on re-renders
+  const [scoreSaved, setScoreSaved] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(15)
+  
+  // References and context
   const answersRef = useRef<string[]>([])
+  const { user } = useUser()
 
-  // Fetch questions from our API
+  // Fetch questions when component mounts
   useEffect(() => {
-    const fetchQuestions = async () => {
+    async function fetchQuestions() {
       try {
         // Get URL parameters
         const params = new URLSearchParams(window.location.search)
@@ -46,7 +51,6 @@ export default function GamePage() {
         if (category && category !== 'any') apiUrl += `&category=${category}`
         if (difficulty && difficulty !== 'any') apiUrl += `&difficulty=${difficulty}`
 
-        console.log('Fetching from our API:', apiUrl)
         const response = await fetch(apiUrl)
         
         if (!response.ok) {
@@ -60,7 +64,6 @@ export default function GamePage() {
           throw new Error('No questions received from the API')
         }
         
-        console.log(`Received ${data.length} questions from API`)
         setQuestions(data)
         setLoading(false)
       } catch (error) {
@@ -86,7 +89,7 @@ export default function GamePage() {
     }
   }, [currentQuestion, questions])
 
-  // Timer effect
+  // Timer effect - count down for each question
   useEffect(() => {
     if (loading || gameOver || isAnswered) return
 
@@ -94,7 +97,7 @@ export default function GamePage() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          handleAnswer("")
+          handleAnswer("") // Time's up, auto-submit empty answer
           return 0
         }
         return prev - 1
@@ -109,7 +112,59 @@ export default function GamePage() {
     setTimeLeft(15)
   }, [currentQuestion])
 
-  const handleAnswer = (answer: string) => {
+  // Handle saving score when game is over
+  useEffect(() => {
+    // Only run when game is over and user is logged in and score isn't saved yet
+    if (gameOver && user && !scoreSaved) {
+      saveGameScore()
+    }
+  }, [gameOver, user, scoreSaved])
+
+  // Function to save game score
+  async function saveGameScore() {
+    try {
+      // Get category name from the first question or use a default
+      let categoryName = 'Mixed'
+      if (questions.length > 0) {
+        categoryName = decode(questions[0].category)
+      }
+      
+      // Get parameters from the URL
+      const params = new URLSearchParams(window.location.search)
+      const difficultyParam = params.get('difficulty') || 'medium'
+      
+      // Prepare score data
+      const scoreData = {
+        user_id: user.id,
+        category: categoryName,
+        difficulty: difficultyParam !== 'any' ? difficultyParam : questions.length > 0 ? questions[0].difficulty : 'medium',
+        score: score,
+        total_questions: questions.length,
+        time_taken: 0 // We're not tracking time
+      }
+      
+      // Send score to the API
+      const response = await fetch('/api/scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(scoreData)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save score')
+      }
+      
+      setScoreSaved(true)
+      console.log('Score saved successfully')
+    } catch (error) {
+      console.error('Error saving score:', error)
+    }
+  }
+
+  // Handle selecting an answer
+  function handleAnswer(answer: string) {
     if (isAnswered) return
 
     setIsAnswered(true)
@@ -128,7 +183,8 @@ export default function GamePage() {
     }
   }
 
-  const nextQuestion = () => {
+  // Move to next question or end game
+  function nextQuestion() {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
       setSelectedAnswer("")
@@ -138,7 +194,8 @@ export default function GamePage() {
     }
   }
 
-  const restartGame = () => {
+  // Restart the game with the same settings
+  function restartGame() {
     // Get current URL parameters
     const params = new URLSearchParams(window.location.search)
     const category = params.get('category')
@@ -154,6 +211,7 @@ export default function GamePage() {
     window.location.href = gameUrl
   }
 
+  // Loading state
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
@@ -173,6 +231,7 @@ export default function GamePage() {
     )
   }
 
+  // Error state
   if (error) {
     return (
       <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
@@ -194,6 +253,7 @@ export default function GamePage() {
     )
   }
 
+  // Game over state
   if (gameOver) {
     const totalQuestions = questions.length
     const maxPossibleScore = questions.reduce((total, q) => {
@@ -201,6 +261,23 @@ export default function GamePage() {
     }, 0)
 
     const percentage = Math.round((score / maxPossibleScore) * 100)
+
+    // Create a message based on whether the score was saved
+    let saveMessage = null
+    
+    if (!user) {
+      saveMessage = (
+        <div className="mt-3 text-center text-amber-600 dark:text-amber-400">
+          <p>Log in to save your score to the leaderboard!</p>
+        </div>
+      )
+    } else if (scoreSaved) {
+      saveMessage = (
+        <div className="mt-3 text-center text-green-600 dark:text-green-400">
+          <p>Your score has been saved!</p>
+        </div>
+      )
+    }
 
     return (
       <div className="container mx-auto px-4 py-12">
@@ -215,6 +292,7 @@ export default function GamePage() {
               <div className="text-xl text-muted-foreground">
                 {score} out of {maxPossibleScore} points
               </div>
+              {saveMessage}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -240,6 +318,7 @@ export default function GamePage() {
     )
   }
 
+  // During game state
   const currentQ = questions[currentQuestion]
   const progressPercentage = ((currentQuestion + 1) / questions.length) * 100
 
@@ -251,15 +330,11 @@ export default function GamePage() {
             <div className="text-sm font-medium text-muted-foreground">
               Question {currentQuestion + 1} of {questions.length}
             </div>
-            <div className="flex items-center gap-1 text-sm font-medium">
-              <Clock className="h-4 w-4" />
-              <span className={timeLeft <= 5 ? "text-red-500" : ""}>{timeLeft}s</span>
-            </div>
           </div>
           <Progress value={progressPercentage} className="h-2" />
           <div className="flex justify-between items-center mt-4 text-sm">
             <div className="px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded text-muted-foreground">
-              {currentQ.category}
+              {decode(currentQ.category)}
             </div>
             <div
               className={`px-2 py-1 rounded text-xs ${
@@ -274,7 +349,7 @@ export default function GamePage() {
             </div>
           </div>
           <CardTitle className="mt-6 text-xl p-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/50 dark:to-blue-950/50 rounded-lg shadow-sm">
-            {currentQ.question}
+            {decode(currentQ.question)}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -295,7 +370,7 @@ export default function GamePage() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span>{answer}</span>
+                  <span>{decode(answer)}</span>
                   {isAnswered && answer === currentQ.correct_answer && (
                     <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                   )}
@@ -322,4 +397,3 @@ export default function GamePage() {
     </div>
   )
 }
-
