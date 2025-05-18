@@ -1,7 +1,5 @@
 # Trivia Master
 
-### Vercel Production Instance -> https://trivia-lovat-ten.vercel.app/
-
 A modern, interactive trivia game built with Next.js and Supabase that challenges players with questions across various categories and difficulty levels.
 
 ## Description
@@ -30,7 +28,7 @@ The application is responsive and works well on both desktop and mobile devices.
 
 ## Links
 
-- [Live Demo](https://trivia-master.vercel.app) (Coming soon)
+- [Live Vercel Deployment](https://trivia-lovat-ten.vercel.app/)
 - [Developer Manual](#developer-manual)
 - [Technical Documentation](./docs/DOCUMENTATION.md)
 
