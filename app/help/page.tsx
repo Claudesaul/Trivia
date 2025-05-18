@@ -7,6 +7,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { HelpCircle, MessageSquare, Settings, Zap } from "lucide-react"
 
+interface ControlCardProps {
+  title: string;
+  description: string;
+}
+
+function ControlCard({ title, description }: ControlCardProps) {
+  return (
+    <div className="border rounded-lg p-4">
+      <h4 className="font-bold mb-1">{title}</h4>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  )
+}
+
 export default function HelpPage() {
   return (
     <div className="container mx-auto px-4 py-12">
@@ -208,15 +222,6 @@ export default function HelpPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  )
-}
-
-function ControlCard({ title, description }) {
-  return (
-    <div className="border rounded-lg p-4">
-      <h4 className="font-bold mb-1">{title}</h4>
-      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   )
 }
