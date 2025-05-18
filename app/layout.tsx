@@ -10,7 +10,14 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Trivia",
   description: "Test your knowledge with thousands of trivia questions",
-  generator: 'Claude B.'
+  generator: 'Claude B.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    apple: { url: '/favicon.svg', type: 'image/svg+xml' }
+  }
 }
 
 export default function RootLayout({
