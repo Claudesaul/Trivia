@@ -173,26 +173,11 @@ export default function AboutPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 place-items-center">
                   <TeamMemberCard
-                    name="Alex Johnson"
-                    role="Project Lead & Frontend Developer"
-                    bio="Computer Science student with a passion for creating intuitive user interfaces and accessible web applications."
-                  />
-                  <TeamMemberCard
-                    name="Sam Rodriguez"
-                    role="Backend Developer"
-                    bio="Specializes in API integration and database management. Loves creating efficient systems that can handle complex data."
-                  />
-                  <TeamMemberCard
-                    name="Taylor Kim"
-                    role="UI/UX Designer"
-                    bio="Focused on creating engaging, accessible designs that make trivia fun and easy for everyone to enjoy."
-                  />
-                  <TeamMemberCard
-                    name="Jordan Smith"
-                    role="Full-Stack Developer"
-                    bio="Handles both frontend and backend tasks, with a special interest in game mechanics and scoring systems."
+                    name="Claude Belizaire"
+                    role="Project Lead, Full-Stack Developer, UI/UX Designer"
+                    bio="Information Science student with a passion for creating intuitive user interfaces and accessible web applications."
                   />
                 </div>
 

@@ -152,12 +152,7 @@ export default function HomePage() {
           <CategoryCard icon={<History className="h-8 w-8" />} title="History" questionCount="500+" categoryId="23" />
           <CategoryCard icon={<Globe className="h-8 w-8" />} title="Geography" questionCount="450+" categoryId="22" />
           <CategoryCard icon={<Brain className="h-8 w-8" />} title="Sports" questionCount="400+" categoryId="21" />
-          <CategoryCard
-            icon={<Trophy className="h-8 w-8" />}
-            title="Create Custom Game"
-            questionCount="4000+ total questions"
-            isCustom={true}
-          />
+          <CategoryCard icon={<Trophy className="h-8 w-8" />} title="Entertainment" questionCount="350+" categoryId="11" />
         </div>
       </section>
 

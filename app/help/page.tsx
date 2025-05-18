@@ -121,32 +121,6 @@ export default function HelpPage() {
                       <strong>Question Count Strategy:</strong> For casual play, 10 questions is ideal. For more
                       competitive sessions, try 15-20 questions to better differentiate player knowledge levels.
                     </li>
-                    <li>
-                      <strong>Theme Nights:</strong> Create themed trivia nights by selecting related categories (e.g.,
-                      Film, Television, and Music for an entertainment theme).
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">For Trivia Hosts</h3>
-                  <ul className="list-disc pl-6 space-y-3">
-                    <li>
-                      <strong>Pre-generate Games:</strong> Create and save multiple game configurations in advance if
-                      you're hosting a trivia night.
-                    </li>
-                    <li>
-                      <strong>Progressive Difficulty:</strong> Start with easier questions and gradually increase the
-                      difficulty to keep players engaged throughout the game.
-                    </li>
-                    <li>
-                      <strong>Time Limits:</strong> Consider setting a time limit for answering questions to add
-                      excitement and prevent players from researching answers.
-                    </li>
-                    <li>
-                      <strong>Team Play:</strong> For larger groups, divide players into teams and use our platform to
-                      display questions on a shared screen.
-                    </li>
                   </ul>
                 </div>
 
@@ -156,13 +130,6 @@ export default function HelpPage() {
                     While you can play without an account, creating one allows you to save your favorite game
                     configurations, track your progress over time, and compete on our leaderboards.
                   </p>
-                  <div className="mt-4">
-                    <Link href="/register">
-                      <Button variant="outline" size="sm">
-                        Create Free Account
-                      </Button>
-                    </Link>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -235,63 +202,7 @@ export default function HelpPage() {
                       We're exploring options for offline play in future updates.
                     </AccordionContent>
                   </AccordionItem>
-
-                  <AccordionItem value="item-8">
-                    <AccordionTrigger>How can I suggest new features?</AccordionTrigger>
-                    <AccordionContent>
-                      We welcome feature suggestions! You can submit your ideas through the contact form below or by
-                      emailing us directly at support@triviachallenge.com.
-                    </AccordionContent>
-                  </AccordionItem>
                 </Accordion>
-
-                <div className="mt-8">
-                  <h3 className="text-xl font-bold mb-4">Contact Us</h3>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5" />
-                        Send us a message
-                      </CardTitle>
-                      <CardDescription>
-                        Have a question that's not answered above? Send us a message and we'll get back to you.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <form className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <label htmlFor="name" className="text-sm font-medium">
-                              Name
-                            </label>
-                            <Input id="name" placeholder="Your name" />
-                          </div>
-                          <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm font-medium">
-                              Email
-                            </label>
-                            <Input id="email" type="email" placeholder="Your email" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label htmlFor="subject" className="text-sm font-medium">
-                            Subject
-                          </label>
-                          <Input id="subject" placeholder="What's this about?" />
-                        </div>
-                        <div className="space-y-2">
-                          <label htmlFor="message" className="text-sm font-medium">
-                            Message
-                          </label>
-                          <Textarea id="message" placeholder="Your message..." rows={4} />
-                        </div>
-                      </form>
-                    </CardContent>
-                    <CardFooter>
-                      <Button>Send Message</Button>
-                    </CardFooter>
-                  </Card>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>

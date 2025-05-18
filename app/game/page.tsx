@@ -30,7 +30,7 @@ export default function GamePage() {
   const [error, setError] = useState<string | null>(null)
   const [shuffledAnswers, setShuffledAnswers] = useState<string[]>([])
   const [scoreSaved, setScoreSaved] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(15)
+  const [timeLeft, setTimeLeft] = useState(10)
   
   // References and context
   const answersRef = useRef<string[]>([])
@@ -97,7 +97,12 @@ export default function GamePage() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          handleAnswer("") // Time's up, auto-submit empty answer
+          // We need to call handleAnswer without referencing the function directly
+          // to avoid dependency issues
+          if (!isAnswered) {
+            setIsAnswered(true);
+            setSelectedAnswer("");
+          }
           return 0
         }
         return prev - 1
@@ -135,7 +140,7 @@ export default function GamePage() {
       
       // Prepare score data
       const scoreData = {
-        user_id: user.id,
+        user_id: user!.id,
         category: categoryName,
         difficulty: difficultyParam !== 'any' ? difficultyParam : questions.length > 0 ? questions[0].difficulty : 'medium',
         score: score,
@@ -336,16 +341,28 @@ export default function GamePage() {
             <div className="px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded text-muted-foreground">
               {decode(currentQ.category)}
             </div>
-            <div
-              className={`px-2 py-1 rounded text-xs ${
-                currentQ.difficulty === "easy"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                  : currentQ.difficulty === "medium"
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                timeLeft <= 3 
+                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" 
+                  : timeLeft <= 6
                     ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-              }`}
-            >
-              {currentQ.difficulty.charAt(0).toUpperCase() + currentQ.difficulty.slice(1)}
+                    : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+              }`}>
+                <Clock className="h-3 w-3" />
+                <span>{timeLeft}s</span>
+              </div>
+              <div
+                className={`px-2 py-1 rounded text-xs ${
+                  currentQ.difficulty === "easy"
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                    : currentQ.difficulty === "medium"
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                }`}
+              >
+                {currentQ.difficulty.charAt(0).toUpperCase() + currentQ.difficulty.slice(1)}
+              </div>
             </div>
           </div>
           <CardTitle className="mt-6 text-xl p-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/50 dark:to-blue-950/50 rounded-lg shadow-sm">
@@ -382,9 +399,23 @@ export default function GamePage() {
             ))}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <div className="text-sm font-medium">
-            Score: <span className="text-primary">{score}</span>
+        <CardFooter className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium">
+              Score: <span className="text-primary">{score}</span>
+            </div>
+            {!isAnswered && (
+              <div className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium ${
+                timeLeft <= 3 
+                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 animate-pulse" 
+                  : timeLeft <= 6
+                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                    : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+              }`}>
+                <Clock className="h-4 w-4" />
+                <span>{timeLeft}s</span>
+              </div>
+            )}
           </div>
           {isAnswered && (
             <Button onClick={nextQuestion} className="gap-2">
